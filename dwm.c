@@ -1650,16 +1650,22 @@ void drawroundedcorners(Client *c) {
 
     // NOTE: this is extremely hacky and surely could be optimized.
     //       Any X wizards out there reading this, please pull request.
-    if (CORNER_RADIUS > 0 && c && !c->isfullscreen) {
+    if (CORNER_RADIUS > 0 && c) {
         Window win;
+        static int cor_rad = CORNER_RADIUS;
         win = c->win;
         if(!win) return;
+
+        if(c->isfullscreen)
+            cor_rad = 0;
+        else
+            cor_rad = CORNER_RADIUS;
 
         XWindowAttributes win_attr;
         if(!XGetWindowAttributes(dpy, win, &win_attr)) return;
 
         // set in config.h:
-        int dia = 2 * CORNER_RADIUS;
+        int dia = 2 * cor_rad;
         int w = c->w;
         int h = c->h;
         if(w < dia || h < dia) return;
@@ -1685,8 +1691,8 @@ void drawroundedcorners(Client *c) {
         XFillArc(dpy, mask, shape_gc, w-dia-1, 0, dia, dia, 0, 23040);
         XFillArc(dpy, mask, shape_gc, 0, h-dia-1, dia, dia, 0, 23040);
         XFillArc(dpy, mask, shape_gc, w-dia-1, h-dia-1, dia, dia, 0, 23040);
-        XFillRectangle(dpy, mask, shape_gc, CORNER_RADIUS, 0, w-dia, h);
-        XFillRectangle(dpy, mask, shape_gc, 0, CORNER_RADIUS, w, h-dia);
+        XFillRectangle(dpy, mask, shape_gc, cor_rad, 0, w-dia, h);
+        XFillRectangle(dpy, mask, shape_gc, 0, cor_rad, w, h-dia);
         XShapeCombineMask(dpy, win, ShapeBounding, 0, 0, mask, ShapeSet);
         XFreePixmap(dpy, mask);
         XFreeGC(dpy, shape_gc);
@@ -1917,6 +1923,7 @@ setfullscreen(Client *c, int fullscreen)
 		c->bw = 0;
 		c->isfloating = 1;
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+        drawroundedcorners(c);
 		XRaiseWindow(dpy, c->win);
 	} else if (!fullscreen && c->isfullscreen){
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
@@ -1930,6 +1937,7 @@ setfullscreen(Client *c, int fullscreen)
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
 		arrange(c->mon);
+        drawroundedcorners(c);
 	}
 }
 
